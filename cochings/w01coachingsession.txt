@@ -1,0 +1,173 @@
+Coach
+Welcome! Just to be clear from the start, this is a coaching session, not a test. It is perfectly okay—and even encouraged—to say “I don’t know” or “I made a mistake.” That’s the fastest way we’ll learn today.
+I’m here as your supportive Learning Coach and Software Mentor, and this is a safe space to talk through your assignment, your decisions, and anything you’re unsure about.
+Before we begin, what name would you like me to use for you during the session?
+
+Me
+Valeria, thank you
+
+Coach
+You’re welcome, Valeria. Glad to work with you today.
+Since we’re in a chat interface, whenever we discuss code, please paste the relevant code snippet directly into the chat so we can look at it together.
+To start with Topic 1 (Express Routing), could you paste a non-trivial snippet from your server.js file that shows how your Express routes are set up?
+
+Me
+In server js i can show how espress routes are set up In this case: app.get('/categories', async (req, res) => { const title = 'Service Categories'; res.render('categories', { title }); }); '/categories' represents the route that users can visit in the browser. When the user accesses this route, express renders the categories.ejs page and sends the title variable 'Service Categories' to the template. This helps to organize the aplication and it is easier to manage without repiting code.
+
+Coach
+Nice explanation, Valeria. You clearly identified the route path, the callback function, and how `res.render()` connects the Express backend with the EJS view. You also pointed out an important design idea: keeping the application organized and reducing repetition.
+One thing I noticed is that the route is marked `async`, but the snippet you shared does not currently use `await` or any asynchronous operation. Why did you decide to make this route `async`?
+
+Me 
+I added `async` because I anticipated that this route might later use APIs or asynchronous operations. Even though it is not needed right now, it keeps the code ready for future use when it is required.
+
+Coach
+That makes sense—planning ahead for asynchronous operations is a reasonable design choice, especially in Express apps where database calls or API requests often get added later.
+Let’s move to **Topic 2: JavaScript Language Principles**.
+Could you paste a non-trivial JavaScript function you’ve written (for example, something that uses arrays, objects, callbacks, async/await, or any core JS logic) and briefly explain what it does?
+
+Me 
+In this example:
+
+function checkAge(person) {
+    if (person.age >= 18) {
+        return "Adult - can enter";
+    } else {
+        return "Minor - cannot enter";
+    }
+}
+
+the function checkAge takes a person object to check their age. It uses an if and else statement to determine whether a person is an adult or a minor. If the age is 18 or higher, it returns the message "Adult - can enter", otherwise, it returns "Minor - cannot enter".
+We can see basic JavaScript principles such as working with objects, conditional statements, and returning values from a function.
+
+Coach
+Good, this is a clear example of control flow and object usage in JavaScript.
+You correctly identified:
+* Function input as an object (`person`)
+* Conditional logic (`if / else`)
+* Return values based on a condition
+One important JavaScript principle here is **data safety**: your function assumes `person.age` always exists and is a valid number.
+What do you think would happen if `person` was missing the `age` property or if `age` was a string instead of a number?
+
+Me
+If the age is missing, the value would be undefined and the function may not work correctly. If age is a string, it could cause incorrect comparisons. We could add a check to make sure age is a number before using it.
+
+Coach
+Exactly—your reasoning is on point.
+In JavaScript, `undefined >= 18` doesn’t throw an error, but it evaluates in a way that can silently give incorrect results, and strings can trigger type coercion, which often leads to unexpected behavior.
+Adding validation is a good step toward making the function more robust.
+Let’s move to **Topic 3: EJS Partials and Pages**.
+Could you paste a relevant snippet of your EJS code (for example, a page like `categories.ejs` or a partial like `header.ejs` / `footer.ejs`) and explain how it is structured and reused in your project?
+
+Me 
+In this example:
+
+<footer>
+    <p>&copy; <%= new Date().getFullYear() %> CSE 340 Service Network.</p>
+</footer>
+
+the `footer.ejs` file is responsible for displaying the footer across all pages, such as `projects.ejs`, `home.ejs`, and `categories.ejs`.
+This helps avoid repeating the same code in every file by using a reusable partial. Inside the footer, we use EJS syntax like `<%= %>` to output dynamic values. For example, `<%= new Date().getFullYear() %>` dynamically displays the current year. This makes the application easier to scale as more pages are added.
+We can see that EJS partials improve code reusability and help keep the project more organized and easier to maintain.
+
+Coach
+Good explanation—you correctly identified the key purpose of EJS partials: reuse and maintainability across multiple pages.
+One important technical detail to sharpen here: the snippet you showed is a **partial**, but it only becomes reusable if it is actually *included* in other EJS pages.
+How are you currently including `footer.ejs` inside pages like `home.ejs` or `categories.ejs` (for example, are you using `<%- include(...) %>` somewhere)?
+
+Me
+Yes, I am using `<%- include(...) %>` to include partials in my EJS pages.
+For example, in `categories.ejs` I include the header and footer like this:
+<%- include("partials/header", { title: title }) %>
+
+<main>
+    <h1><%= title %></h1>
+    <ul>
+        <li>Environmental</li>
+        <li>Educational</li>
+        <li>Community Service</li>
+        <li>Health and Wellness</li>
+    </ul>
+</main>
+
+<%- include("partials/footer") %>
+
+In this case, `<%- include("partials/footer") %>` inserts the footer partial into the page at runtime.
+This allows the same footer code to be reused across all pages.
+
+Coach
+Great—this is exactly the correct pattern for EJS reuse.
+You’re using:
+
+* `<%- include("partials/header", { title: title }) %>` → passing data into a partial
+* `<%- include("partials/footer") %>` → simple reuse without parameters
+
+One subtle but important EJS principle here is the difference between:
+
+* `<%= %>` (escaped output)
+* `<%- %>` (unescaped output, which is what makes `include()` work properly for inserting HTML)
+
+Why do you think EJS uses `<%- include(...) %>` instead of `<%= include(...) %>` when inserting partials?
+
+Me 
+EJS uses `<%- include(...) %>` instead of `<%= include(...) %>` because partials return HTML content that should be rendered directly, not escaped. The `<%- %>` syntax outputs raw HTML, which allows the included file (such as a footer or header) to be properly inserted into the page structure.
+If `<%= %>` were used instead, the HTML would be escaped and displayed as plain text instead of being rendered as actual HTML elements. That is why `<%- include(...) %>` is needed when inserting partials.
+
+Coach
+Correct—that’s exactly the key distinction.
+
+You’re showing a solid understanding of:
+
+* **HTML escaping vs raw rendering**
+* Why partials must be injected as real DOM structure
+* How EJS controls output safety vs layout composition
+
+We’ve now completed:
+
+* Topic 1: Express Routing
+* Topic 2: JavaScript principles
+* Topic 3: EJS partials
+
+Let’s move to the final one: **Topic 4: Frontend CSS**.
+
+Could you paste a non-trivial CSS snippet from your project (for example, layout styling, navigation bar, grid/flexbox, or responsive design rules) and explain what it is doing and why you structured it that way?
+
+Me
+In this example:
+
+@media (max-width: 768px) {
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+}
+
+This CSS rule is used to make the navigation bar responsive on smaller screens, such as mobile devices. When the screen width is 768px or less, the navigation menu changes its layout from a horizontal row to a vertical column. It also centers the items and adds spacing between them using `gap: 1rem`. This improves usability on mobile devices.
+
+Coach
+Good example—you’re correctly describing a **responsive design breakpoint** and the intent behind it.
+
+A couple of deeper CSS principles are working here:
+
+* `@media (max-width: 768px)` is a **mobile-first or responsive breakpoint rule**, meaning styles inside it override default styles when the screen shrinks.
+* `flex-direction: column` only works if `nav ul` is already using `display: flex` somewhere outside this snippet.
+* `gap` is a modern Flexbox feature that replaces older spacing hacks like margins between `<li>` elements.
+
+To connect this to real layout thinking: what is your default (non-mobile) layout for `nav ul`, and where do you define it in your CSS?
+
+Me
+The default (non-mobile) layout for the navigation is defined in the main `nav ul` rule.
+
+nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+This creates a horizontal navigation bar using Flexbox. The items are aligned in a row, centered, and spaced evenly using `gap: 2rem`. This is the standard desktop layout. The mobile version is then handled separately using a media query, which changes the layout to a vertical column.
+
+Coach
+Session complete, Valeria. We’ve now covered all four required topics (Express routing, JavaScript principles, EJS partials, and frontend CSS), and worked through your explanations and reasoning step by step.
