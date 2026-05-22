@@ -1,0 +1,196 @@
+AI coach
+Welcome! Just to be clear from the start, this is a coaching session, not a test. It is perfectly okay—and even encouraged—to say 'I don't know' or 'I made a mistake.' That's the fastest way we'll learn today.
+Before we begin, what name should I use for you so I can address you properly during our session?
+
+Me 
+Valeria 
+
+AI coach
+Thanks, Valeria — great, I’ll use that.
+This is a safe learning space where mistakes are expected and useful, and we’ll treat everything as part of the learning process rather than evaluation.
+We’ll start with **Topic 1: Relational Database Design and Structure**.
+Please paste a snippet of your work that includes your **table definitions (or schema design)** and **one SQL query** you’ve written, so we can look at how your data is structured and how your tables relate to each other.
+**Question:** Can you paste your database schema (tables + relationships) along with one SQL query you used?
+
+Me
+-- ========================================
+-- Categories Table
+-- ========================================
+
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- ========================================
+-- Project Categories (Many-to-Many)
+-- ========================================
+
+CREATE TABLE project_categories (
+    project_id INT NOT NULL,
+    category_id INT NOT NULL,
+
+    PRIMARY KEY (project_id, category_id),
+
+    CONSTRAINT fk_project
+        FOREIGN KEY (project_id)
+        REFERENCES service_projects(project_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories(category_id)
+        ON DELETE CASCADE
+);
+
+-- ========================================
+-- Insert Categories
+-- ========================================
+
+INSERT INTO categories (category_name)
+VALUES
+('Education'),
+('Health'),
+('Community Service');
+
+-- ========================================
+-- Associate Projects with Categories
+-- ========================================
+
+INSERT INTO project_categories (project_id, category_id)
+VALUES
+(1, 3), -- Food Drive -> Community Service
+(2, 1), -- School Cleanup -> Education
+(3, 2); -- Medical Camp -> Health
+
+SELECT * FROM project_categories; This is a part of my SQL where i used a many-to-many relationship between projects and categories
+
+AI coach
+Great, Valeria — this is a solid example of a many-to-many relationship, and it gives us a good starting point.
+You’ve correctly introduced a **junction table (`project_categories`)**, which is the standard way to model many-to-many relationships between `service_projects` and `categories`.
+I want to focus your thinking a bit deeper on the *why* behind your design choices:
+Your `project_categories` table uses a **composite primary key (`project_id`, `category_id`)** instead of a separate ID column, which is a meaningful design decision.
+**Question:** Why did you choose a composite primary key for `project_categories` instead of adding a separate `id` column as the primary key?
+
+Me 
+I chose a composite primary key because the relationship between service_projects and categories is defined by the combination of project_id and category_id. Those ids together, define a relationship, and the most important thing is that is unique. This allows to have a many to many relationship and prevents duplicate entries.
+
+AI coach
+That’s the right core idea: the *pair* defines the relationship and enforces uniqueness.
+To make it more concrete, think about what would happen if a separate `id` column existed:
+You could accidentally insert duplicate logical relationships like `(project_id = 1, category_id = 3)` multiple times unless you also added a unique constraint — so your reasoning about preventing duplicates is exactly the key design motivation.
+Let’s move into **Topic 2: Server-Side Data Access Logic (Node.js)**.
+Please paste the **Node.js function** you use to query this database (for example, something using `pg`, `mysql2`, or an ORM like Sequelize) that retrieves projects, categories, or joins them together.
+**Question:** Can you share the Node.js function that fetches data from your database (especially anything that queries `project_categories` or joins tables)?
+
+Me
+In this code, import pool from "./db.js";
+
+export async function getAllCategories() {
+    const query = `
+        SELECT *
+        FROM categories
+        ORDER BY category_name;
+    `;
+
+    const result = await pool.query(query);
+    return result.rows;
+} I use a Node.js function that connects to my PostgreSQL database using a connection pool. The function retrieves all categories from the database and returns the result rows. It executes a SQL query on the server side and then returns the data so it can be used in my Express routes and rendered in the views.
+
+AI coach
+Good — this is a clean and simple data access function, and your explanation of the flow is accurate.
+Right now, this function demonstrates a **basic read operation**, but it doesn’t yet show how your application handles relationships (like your `project_categories` many-to-many structure).
+To connect this to your database design work: server-side logic becomes especially important when you start combining tables.
+For example, instead of just `categories`, you might eventually fetch categories linked to a specific project using a JOIN.
+Here’s the key idea I want you to reflect on: your database design already supports complex relationships, but your current Node.js function is only retrieving a single table.
+**Question:** If you wanted to retrieve all projects along with their categories, how do you think your Node.js function and SQL query would need to change (even conceptually, not necessarily perfect code yet)?
+
+Me 
+If I wanted to retrieve all projects along with their categories, I would need to change my SQL query to use JOINs between service_projects, project_categories, and categories. This is because the relationship between projects and categories is many-to-many and is stored in the junction table. In my Node.js function, I would create a new function such as getAllProjectsWithCategories, which would execute a JOIN query and return combined results.
+
+AI coach
+Yes — that’s exactly the direction you should be thinking in.
+You correctly identified the key structural requirement: because this is a many-to-many relationship, you must traverse the junction table (`project_categories`) to reconstruct the “full object” view (projects + their categories). That’s the core reason JOINs exist in relational modeling.
+A typical SQL shape for what you described would look conceptually like:
+
+* `service_projects`
+* JOIN `project_categories`
+* JOIN `categories`
+
+And then you’d usually either:
+
+* return **flat rows** (one row per project-category pair), or
+* aggregate categories per project (depending on your app needs)
+Your Node.js idea is also on point: separating this into something like `getAllProjectsWithCategories()` is good **service-layer thinking**, because you’re distinguishing between simple retrieval and relational composition logic.
+Now let’s move into **Topic 3: Express Server Logic and Routing**.
+Please paste a **specific Express route declaration** from your server file (for example something like `app.get(...)` or `router.get(...)`) that uses one of your database functions.
+**Question:** Can you share one Express route from your project that handles a request and calls your database function?
+
+Me 
+app.get("/categories", async (req, res) => {
+    const categories = await getAllCategories();
+
+    res.render("categories", {
+        title: "Categories",
+        categories
+    });
+}); 
+Here we can observe an Express route that handles a GET request for the categories endpoint. When a user visits this route, it calls my getAllCategories database function to retrieve data from PostgreSQL. Once the data is returned, it is passed into the EJS template using res.render, which allows the categories to be displayed on the frontend.
+
+AI coach
+Good — this is a clear and standard Express flow, and your explanation of the request cycle is accurate.
+You’re correctly describing the full pipeline:
+Browser request → Express route → DB function → data returned → `res.render()` → EJS view
+That’s exactly the kind of separation of concerns we want in a Node/Express app.
+One small but important detail to notice: right now your route is **not handling errors**. So if `getAllCategories()` fails (database down, query error, etc.), the server would crash or hang depending on configuration.
+A more robust version usually wraps the async logic in a `try/catch`, or uses an error-handling middleware pattern.
+Now let’s connect this to **Topic 4: Client-Side Rendering (EJS Templates)**.
+Please paste the **EJS snippet** where you actually loop through and display `categories` (for example using `<%= %>` or `<% %>` syntax in your `categories.ejs` file).
+**Question:** Can you share the part of your EJS template where you render the `categories` data on the page?
+
+Me 
+This is my categories.ejs <%- include("partials/header", { title: title }) %>
+
+    <main>
+        <h1><%= title %></h1>
+        
+        <ul>
+            <% categories.forEach(category => { %>
+                <li>
+                    <%= category.category_name %>
+                </li>
+                <% }) %>
+        </ul>
+    </main>
+
+<%- include("partials/footer") %>  The data is passed from my Express route into the view, and then I use EJS syntax to dynamically display it. I use a forEach loop to iterate over the categories array, and for each category I display the category_name inside an HTML list item.
+
+This allows the page to be dynamically rendered based on the data coming from the database.
+
+AI coach
+Nice — this completes the full stack flow really cleanly.
+Your EJS usage is correct and shows a proper understanding of how server-rendered templates work in Express:
+
+* `<% %>` → control flow (looping through data)
+* `<%= %>` → output escaped values safely
+* Data is injected from `res.render()` → then iterated in the view
+
+So across the four layers you’ve shown:
+
+* **Database design:** many-to-many via junction table ✔
+* **Node data access:** `pool.query()` abstraction ✔
+* **Express routing:** request → DB → render pipeline ✔
+* **EJS rendering:** dynamic iteration with `forEach` ✔
+
+One important subtle improvement to consider: right now your EJS assumes `categories` always exists and is always an array. In real applications, if the DB call fails or returns null/undefined, the page would crash at `categories.forEach`.
+A common safeguard is ensuring default values before rendering or checking in the template.
+We’ve now covered all four required areas, so we can move into closing reflection.
+**Question:** Looking at all four parts together, which layer do you feel is currently the weakest or least clear for you (database design, Node.js logic, Express routing, or EJS rendering), and why?
+
+Me 
+I think I’m fairly comfortable with all four parts because they work together in a clear flow from the database to the frontend.If I had to choose one area that feels slightly less clear, it would be connecting everything conceptually in more complex scenarios, especially when relationships become more advanced or when I need to transform data after a JOIN query. I think for now it is okey, with practice I will learn. 
+
+AI coach
+This coaching session is now complete. We covered all four required areas: relational database design, server-side data access in Node.js, Express routing logic, and client-side rendering using EJS templates. The student demonstrated a strong understanding of the full application flow from the database to the frontend and showed awareness of how the different layers connect.
+The main area identified for future improvement is handling more complex scenarios involving JOIN operations and data transformation after retrieving relational data.
+Overall, this session reflected solid foundational knowledge and a good grasp of full-stack structure and communication between layers.
