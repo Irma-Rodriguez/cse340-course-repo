@@ -11,12 +11,12 @@
 
         <p>
             <strong>Date:</strong>
-            <%= new Date(project.date).toLocaleDateString() %>
+            <%= project.date ? new Date(project.date).toLocaleDateString() : 'No date available' %>
         </p>
 
         <p>
             <strong>Location:</strong>
-            <%= project.location %>
+            <%= project.location ? project.location : 'No location available' %>
         </p>
 
         <p>
@@ -26,6 +26,18 @@
             </a>
         </p>
 
+        <p>
+            <strong>Categories:</strong>
+        
+            <% categories.forEach(category=> { %>
+        
+                <a href="/category/<%= category.category_id %>">
+                    <%= category.category_name %>
+                </a>
+        
+            <% }) %>
+        </p>
+
     </main>
 
-<%- include('partials/footer') %>
+    <%- include('partials/footer') %>

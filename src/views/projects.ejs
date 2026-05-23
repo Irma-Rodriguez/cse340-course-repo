@@ -16,7 +16,7 @@
 
                     :
 
-                    <%= new Date(project.date).toLocaleDateString() %>
+                    <%= project.date ? new Date(project.date).toLocaleDateString() : 'No date' %>
 
                         (
 

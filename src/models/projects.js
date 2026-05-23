@@ -1,7 +1,6 @@
 import db from './db.js';
 
 const getAllProjects = async () => {
-
     const sql = `
         SELECT
             sp.project_id,
@@ -38,7 +37,6 @@ const getProjectsByOrganizationId = async (organizationId) => {
     return result.rows;
 };
 
-
 const getUpcomingProjects = async (number_of_projects) => {
     const sql = `
         SELECT
@@ -60,7 +58,6 @@ const getUpcomingProjects = async (number_of_projects) => {
     const result = await db.query(sql, [number_of_projects]);
     return result.rows;
 };
-
 
 const getProjectDetails = async (id) => {
     const sql = `
