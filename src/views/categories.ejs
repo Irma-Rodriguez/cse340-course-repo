@@ -1,17 +1,37 @@
 <%- include("partials/header", { title: title }) %>
 
     <main>
-        <h1><%= title %></h1>
-        
+        <h1>
+            <%= title %>
+        </h1>
+
+        <!-- BOTÓN CREAR CATEGORÍA -->
+        <p>
+            <a href="/new-category">+ Add New Category</a>
+        </p>
+
+        <!-- LISTA DE CATEGORÍAS -->
         <ul>
-            <% categories.forEach(category => { %>
+            <% categories.forEach(category=> { %>
                 <li>
+
+                    <!-- LINK A DETALLE -->
                     <a href="/category/<%= category.category_id %>">
                         <%= category.category_name %>
                     </a>
+
+                    <!-- LINK EDIT -->
+                    <span>
+                        |
+                        <a href="/edit-category/<%= category.category_id %>">
+                            Edit
+                        </a>
+                    </span>
+
                 </li>
-            <% }) %>
+                <% }) %>
         </ul>
+
     </main>
 
-<%- include("partials/footer") %>
+    <%- include("partials/footer") %>

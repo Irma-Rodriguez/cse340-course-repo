@@ -1,0 +1,175 @@
+AI
+Welcome! Just to be clear from the start, this is a coaching session, not a test. It is perfectly okay—and even encouraged—to say “I don’t know” or “I made a mistake.” That’s the fastest way we’ll learn today.
+I’ll act as your supportive Learning Coach and Software Mentor, and we’ll go through your assignment together one step at a time in a safe, non-judgmental way. Since we’re in a chat interface, whenever we discuss code, please paste the relevant code snippet directly into the chat.
+To get started: what name would you like me to call you during our coaching session?
+
+Me
+Valeria
+
+AI
+Nice to meet you, Valeria. This is a learning space, not an evaluation space, so feel free to think out loud, revise ideas, or point out anything you’re unsure about.
+To begin with Topic 1 (Models), could you paste one non-trivial model function that accepts a parameter and uses it in an SQL query?
+
+Me
+export async function getProjectsByCategoryId(categoryId) {
+    const query = `
+        SELECT
+            sp.project_id,
+            sp.title
+        FROM service_projects sp
+        JOIN project_categories pc
+            ON sp.project_id = pc.project_id
+        WHERE pc.category_id = $1
+        ORDER BY sp.title;
+    `;
+
+    const result = await db.query(query, [categoryId]);
+
+    return result.rows;
+} 
+This model fuction retrieves all projects that belong to a specific category. It receives a category id and uses it in a SQL parameter query.
+
+AI
+Good, this is a solid Model layer function—you're correctly using a parameterized query (`$1`) which is important for safety and clarity.
+I also see you’re joining `service_projects` with `project_categories` to filter by `category_id`, which makes sense for a many-to-many or mapping table design.
+**One question for you (Topic 1 focus):**
+Why did you choose to use a `JOIN` with `project_categories` instead of directly storing `category_id` inside the `service_projects` table?
+
+Me
+I used a JOIN because projects and categories have a many-to-many relationship, which is managed through the project_categories table. This allows a project to belong to multiple categories without duplicating data.
+
+AI
+That’s a correct relational design choice—using a junction table like `project_categories` is exactly how many-to-many relationships are typically handled in SQL.
+You’ve clearly understood why normalization matters here: avoiding duplicated category fields and keeping relationships flexible.
+
+Now moving to **Topic 2 (Views)**.
+Please paste a **non-trivial EJS view snippet** where you:
+* insert dynamic data, and
+* include at least one place where data is used inside a **link (`<a href="...">`)**
+What does that part of your view look like?
+
+Me
+<%- include("partials/header", { title: title }) %>
+
+    <main>
+        <h1><%= title %></h1>
+        
+        <ul>
+            <% categories.forEach(category => { %>
+                <li>
+                    <a href="/category/<%= category.category_id %>">
+                        <%= category.category_name %>
+                    </a>
+                </li>
+            <% }) %>
+        </ul>
+    </main>
+
+<%- include("partials/footer") %> 
+This view dynamically displays a list of categories using EJS. Each category is rendered inside a loop, and the category name is displayed as a clickable link that includes the category ID in the URL. 
+
+AI
+Good, this is a clean and standard use of EJS for dynamic rendering.
+You’re correctly:
+
+* looping with `forEach`
+* injecting data safely with `<%= %>`
+* building dynamic routes using `category.category_id`
+* separating layout concerns with partials (`header` and `footer`)
+
+One small improvement to be aware of: embedding IDs directly in URLs is normal, but it also means your controller must validate that `category_id` exists and is valid to avoid unexpected routes or errors later.
+
+Now moving to **Topic 3 (Controllers)**.
+Please paste a **non-trivial controller route handler** that includes a **route parameter** (for example something like `/:id`) and show how you use that parameter inside the controller logic.
+
+Me
+const showCategoryDetailsPage = async (req, res, next) => {
+    try {
+        const id = Number(req.params.id);
+
+        const category = await getCategoryById(id);
+
+        if (!category) {
+            return res.status(404).send('Category not found');
+        }
+
+        const projects = await getProjectsByCategoryId(id);
+
+        res.render('category', {
+            title: category.category_name,
+            category,
+            projects
+        });
+
+    } catch (err) {
+        next(err);
+    }
+};  
+
+This controller uses a route parameter (req.params.id) to get the category ID from the URL. It then retrieves the category and its related projects from the database and renders the category view. I convert the route parameter to a number to ensure the ID is in the correct format before using it in database queries.
+
+AI
+This is a strong controller implementation—your flow is clear and it follows good separation of concerns.
+
+You’re doing several important things correctly:
+
+* Extracting `req.params.id`
+* Converting it to a number (good defensive step)
+* Fetching data in sequence (`category`, then `projects`)
+* Handling a missing record with a `404`
+* Delegating unexpected errors to Express via `next(err)`
+* Passing structured data into the view cleanly
+
+One subtle improvement to think about: right now you’re returning `res.status(404).send('Category not found')`, which is fine for debugging, but in a real app you’d usually render a proper 404 page for consistency in UX.
+Now moving to **Topic 4 (Error Handling)**.
+
+Please paste your **error-handling strategy code**, including how you handle either:
+* a **404 route handler**, or
+* a **500 global error handler middleware** (or both if you have them).
+
+Me
+// Global error handler
+app.use((err, req, res, next) => {
+    // Log error details for debugging
+    console.error('Error occurred:', err.message);
+    console.error('Stack trace:', err.stack);
+
+    // Determine status and template
+    const status = err.status || 500;
+    const template = status === 404 ? '404' : '500';
+
+    // Prepare data for the template
+    const context = {
+        title: status === 404 ? 'Page Not Found' : 'Server Error',
+        error: err.message,
+        stack: err.stack
+    };
+
+    // Render the appropriate error template
+    res.status(status).render(`errors/${template}`, context);
+}); 
+I used a global error handling middleware in Express. It logs the error details for debugging, determines the appropriate HTTP status code, and renders either a 404 or 500 error page depending on the error type.
+
+AI
+Good—this is a proper Express error-handling middleware pattern, and you’re using it in a structured way.
+
+What you did well:
+
+* Centralized error handling (good architecture choice)
+* Logging both message + stack trace (useful for debugging)
+* Mapping `err.status` to HTTP status codes (clean pattern)
+* Separating UI concerns with dedicated `404` and `500` templates
+* Keeping controller logic free from rendering error pages
+
+One thing to watch: exposing `err.stack` to the rendered view can be useful in development, but in production it can leak internal implementation details. A common pattern is to only include stack traces when `NODE_ENV !== 'production'`.
+
+---
+
+### Session wrap-up
+
+We’ve now covered all four required areas:
+
+* Models ✔️ (SQL + parameterized query + JOIN)
+* Views ✔️ (EJS dynamic rendering + links)
+* Controllers ✔️ (route params + request flow)
+* Error handling ✔️ (global middleware + status-based rendering)

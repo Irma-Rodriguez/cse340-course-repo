@@ -11,7 +11,6 @@ export async function getAllCategories() {
     return result.rows;
 }
 
-// Adding category by ID
 export async function getCategoryById(categoryId) {
     const query = `
         SELECT
@@ -22,11 +21,9 @@ export async function getCategoryById(categoryId) {
     `;
 
     const result = await db.query(query, [categoryId]);
-
     return result.rows[0];
 }
 
-// Obtaining all the projects from a category
 export async function getProjectsByCategoryId(categoryId) {
     const query = `
         SELECT
@@ -40,11 +37,9 @@ export async function getProjectsByCategoryId(categoryId) {
     `;
 
     const result = await db.query(query, [categoryId]);
-
     return result.rows;
 }
 
-// Obtaining all the projects from a category from a project
 export async function getCategoriesByProjectId(projectId) {
     const query = `
         SELECT
@@ -58,6 +53,59 @@ export async function getCategoriesByProjectId(projectId) {
     `;
 
     const result = await db.query(query, [projectId]);
-
     return result.rows;
+}
+
+const assignCategoryToProject = async (categoryId, projectId) => {
+    const query = `
+        INSERT INTO project_categories (
+            category_id,
+            project_id
+        )
+        VALUES ($1, $2);
+    `;
+
+    await db.query(query, [categoryId, projectId]);
+};
+
+export async function updateCategoryAssignments(projectId, categoryIds) {
+
+    const deleteQuery = `
+        DELETE FROM project_categories
+        WHERE project_id = $1;
+    `;
+
+    await db.query(deleteQuery, [projectId]);
+
+    for (const categoryId of categoryIds) {
+        await assignCategoryToProject(categoryId, projectId);
+    }
+}
+
+export async function createCategory(categoryName) {
+    const query = `
+        INSERT INTO categories (category_name)
+        VALUES ($1)
+        RETURNING category_id;
+    `;
+
+    const result = await db.query(query, [categoryName]);
+    return result.rows[0].category_id;
+}
+
+export async function updateCategory(categoryId, categoryName) {
+    const query = `
+        UPDATE categories
+        SET category_name = $1
+        WHERE category_id = $2
+        RETURNING category_id;
+    `;
+
+    const result = await db.query(query, [categoryName, categoryId]);
+
+    if (result.rows.length === 0) {
+        throw new Error('Category not found');
+    }
+
+    return result.rows[0].category_id;
 }
