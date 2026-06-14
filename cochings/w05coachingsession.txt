@@ -1,0 +1,261 @@
+AI
+Welcome! Just to be clear from the start, this is a coaching session, not a test. It is perfectly okay—and even encouraged—to say "I don't know" or "I made a mistake." That's the fastest way we'll learn today.
+I'm your supportive Learning Coach and Software Mentor for this discussion. We'll work through your assignment together in a safe learning space where mistakes are part of the learning process.
+Since we're in a chat interface, whenever we need to discuss code, please **paste the relevant code snippet into the chat** so we can look at it together.
+To get started: **What name would you like me to use during our coaching session?**
+
+Me 
+Valeria
+
+AI
+Nice to meet you, Valeria. I'm glad you're here, and as a reminder, this is a learning conversation—not a test. The goal is to understand your thinking, identify any gaps, and discuss your design choices together.
+To begin with Topic 1 (Registration and Password Hashing), **please paste a non-trivial code snippet from your application that handles user registration and password hashing.**
+
+Me
+const processUserRegistrationForm = async (req, res) => {
+    const { name, email, password } = req.body;
+
+    try {
+
+        // Crear hash de la contraseña
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        // Guardar usuario
+        const userId = await createUser(
+            name,
+            email,
+            passwordHash
+        );
+
+        console.log('New user created:', userId);
+
+        req.flash(
+            'success',
+            'Registration successful! Please log in.'
+        );
+
+        res.redirect('/');
+
+    } catch (error) {
+
+        console.error('Error registering user:', error);
+
+        req.flash(
+            'error',
+            'An error occurred during registration.'
+        );
+
+        res.redirect('/register');
+    }
+};  
+This function processes the registration form submitted by the user. First, it extracts the user's name, email, and password from the request body. Then it uses bcrypt to generate a salt with 10 rounds and hashes the password before storing it.
+
+AI
+Thanks, Valeria. Your explanation shows that you understand the main security purpose of hashing: the application stores the hash rather than the user's plain-text password. I also noticed that you're generating a unique salt before hashing, which is a standard and effective approach with bcrypt.
+**My question:** Why did you choose to store `passwordHash` in the database instead of storing the original `password` value directly?
+
+Me
+I stored passwordHash instead of the original password to improve security. Hashing with bcrypt protects user credentials because the real password is never saved in the database. If someone gained access to the database, they would only see hashed values, making it much more difficult to recover the original passwords.
+
+AI
+That's a solid explanation, Valeria. You identified the key security benefit: if the database is compromised, attackers do not immediately obtain users' actual passwords. You've also connected that protection to bcrypt's one-way hashing process, which is exactly the reasoning most developers would give.
+To continue our discussion and move into Topic 2 (Login and Sessions), **please paste a non-trivial code snippet from your application that handles user login and/or session management.**
+
+Me
+const processLoginForm = async (req, res) => {
+
+    const { email, password } = req.body;
+
+    try {
+
+        const user =
+            await authenticateUser(
+                email,
+                password
+            );
+
+        if (user) {
+
+            req.session.user = user;
+
+            req.flash(
+                'success',
+                'Login successful!'
+            );
+
+            console.log(
+                'User logged in:',
+                user
+            );
+
+            return res.redirect('/dashboard');
+        }
+
+        req.flash(
+            'error',
+            'Invalid email or password.'
+        );
+
+        res.redirect('/login');
+
+    } catch (error) {
+
+        console.error(
+            'Error during login:',
+            error
+        );
+
+        req.flash(
+            'error',
+            'An error occurred during login.'
+        );
+
+        res.redirect('/login');
+    }
+}; 
+This function handles the login process. It receives the email and password submitted by the user and calls authenticateUser to verify the credentials.
+
+AI
+Thank you, Valeria. Your explanation covers the overall flow clearly: the controller receives the credentials, delegates verification to `authenticateUser`, and then handles success or failure.
+One detail I noticed is that after successful authentication, you store the user object in the session with:
+
+```js
+req.session.user = user;
+```
+
+This is the point where the application "remembers" the user across future requests, so they don't have to log in again on every page load.
+**My question:** What information do you store in `req.session.user`, and why did you choose to store that information in the session?
+
+Me
+I store the authenticated user's data in req.session.user so the application can remember who is logged in. This allows the user to access protected pages, see their own information, and continue using the application without having to enter their credentials again on every request.
+
+AI
+That’s the right general idea—you’re using the session as a way to persist identity across requests so the app can recognize the user without re-authenticating every time.
+One important nuance worth thinking about is *what exactly* you store there. In many applications, storing the entire user object can accidentally include sensitive fields (like password hashes, roles you might later change, or database metadata), and it also increases session size unnecessarily.
+A common pattern is to store only a minimal identifier, like `user.id` and maybe a role:
+
+```js
+req.session.user = {
+  id: user.id,
+  role: user.role
+};
+```
+
+That keeps the session lightweight and safer, while you can always fetch full user data from the database when needed.
+**My question:** What fields are currently included inside your `user` object when you assign it to `req.session.user`?
+
+Me
+Currently, I store the entire user object returned from the authenticateUser() function in req.session.user. This object likely includes fields such as the user’s id, name, email, and role information, depending on what is returned from the database query.
+
+AI
+Good, that’s a precise answer—and it reveals an important design decision point.
+If you’re storing the full user object, that means your session now carries whatever your database query returns. That often includes harmless fields like `id`, `name`, `email`, but it can also unintentionally include things like password hashes or internal metadata depending on how `authenticateUser()` is written.
+This is exactly the kind of thing that later causes subtle bugs or security issues, especially when:
+
+* roles change but the session still has stale role data
+* sensitive fields are accidentally exposed in templates or APIs
+* session payload becomes larger than necessary
+A more controlled approach is usually to *explicitly shape* the session user object instead of passing everything through.
+Now moving into **Topic 3 (Protected Access Middleware)**, please paste a non-trivial code snippet that shows how you protect routes—specifically something like `requireLogin` or `requireRole`.
+
+Me
+router.get(
+    '/new-organization',
+    requireRole('admin'),
+    showNewOrganizationForm
+);
+
+router.post(
+    '/new-organization',
+    requireRole('admin'),
+    processNewOrganizationForm
+);
+
+router.get(
+    '/dashboard',
+    requireLogin,
+    showDashboard
+);
+
+router.get(
+    '/users',
+    requireRole('admin'),
+    showUsersPage
+);
+These routes are protected using middleware functions. requireLogin ensures that only authenticated users can access certain pages like the dashboard. requireRole('admin') adds an extra layer of authorization by restricting access to users with the admin role. This means that even if a user is logged in, they cannot access admin-only routes unless they have the correct role. Middleware runs before the controller logic, which allows us to block unauthorized access early in the request lifecycle.
+
+AI
+Good—this is a clean example of route-level protection, and your explanation correctly captures the key idea: middleware runs *before* the controller and can short-circuit the request if the user is not allowed.
+What I’d like to zoom in on is the *implementation logic*, because that’s where most real-world mistakes happen (not in the route wiring itself).
+Right now we can see how you use:
+
+```js
+requireLogin
+requireRole('admin')
+```
+
+But we haven’t looked at what they actually do internally.
+**My question:** Can you paste the implementation of your `requireLogin` middleware?
+
+Me
+const requireLogin = (req, res, next) => {
+
+    if (!req.session || !req.session.user) {
+
+        req.flash(
+            'error',
+            'You must be logged in to access that page.'
+        );
+
+        return res.redirect('/login');
+    }
+
+    next();
+}; 
+This middleware checks whether the user is authenticated before allowing access to protected routes. It verifies if req.session.user exists. If the user is not logged in, it redirects them to the login page and shows an error message. If the user is logged in, it calls next() to continue to the requested route.
+
+AI
+This is a straightforward and correct `requireLogin` middleware. You’re doing the essential check: verifying session state and blocking unauthenticated access early, which is exactly what middleware is good for.
+One subtle design point here is that your logic depends entirely on `req.session.user` existing and being trustworthy—which connects back to what we discussed earlier about storing the full user object in the session. If that object ever becomes stale or malformed, this check still “passes,” even if the underlying user state has changed.
+Now we’ve covered the core backend protection pieces (registration, login, session handling, and middleware). The remaining piece is how this translates into the user interface.
+**My question:** Can you paste a snippet of your EJS or HTML code where you conditionally show or hide navigation links based on the user’s role (for example, showing admin links only for `admin` users)?
+
+Me
+<% if (user && user.role_name === 'admin') { %>
+    <p>
+        <a href="/new-project">
+            Add a New Service Project
+        </a>
+    </p>
+<% } %> 
+This EJS snippet conditionally renders a navigation link based on the user's role. It checks if a user exists and if their role is 'admin'. If both conditions are true, the "Add a New Service Project" link is displayed. Otherwise, the link is hidden from non-admin users. This improves the user experience by only showing relevant options based on permissions. 
+
+AI
+Great—this completes all four required areas, and your UI logic matches the same role-based control pattern you used on the backend.
+A key thing to notice across your system is consistency:
+
+* Session stores `user`
+* Middleware checks `req.session.user`
+* UI checks `user.role_name`
+
+That last part is where systems sometimes drift. If `role_name` comes from a database join or a specific query in `authenticateUser`, then everything is fine—but if the session user object changes shape (like earlier when we discussed storing the full object), UI checks can break unexpectedly or become inconsistent with backend authorization rules.
+A stronger pattern many apps use is to make the backend the *source of truth* for authorization (middleware), and treat the UI checks as convenience only—not security.
+Now that we’ve covered all four topics (registration, login, middleware, and UI role rendering), we’ll close this out with a short synthesis.
+
+Across your design, the main flow is:
+
+1. User registers → password is hashed (good security boundary)
+2. User logs in → session is created
+3. Middleware enforces access rules → protects routes
+4. UI adapts → improves usability but doesn’t enforce security
+
+That separation is actually the correct mental model for web apps.
+
+---
+
+I’ll now save the full coaching transcript to a downloadable `.txt` file for you.
+**My question (final step before I generate the file):** Do you want the transcript saved as a simple chronological log, or formatted with clear sections per topic (Registration, Login, Middleware, UI)?
+
+Me
+Thank you

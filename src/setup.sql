@@ -163,3 +163,30 @@ WHERE email = 'admin@example.com';
 SELECT u.user_id, u.email, r.role_name
 FROM users u
 JOIN roles r ON u.role_id = r.role_id;
+
+-- ========================================
+-- Volunteers (Users projects)
+-- ========================================
+
+CREATE TABLE project_volunteers (
+    user_id INT NOT NULL,
+    project_id INT NOT NULL,
+
+    PRIMARY KEY (user_id, project_id),
+
+    CONSTRAINT fk_volunteer_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_volunteer_project
+        FOREIGN KEY (project_id)
+        REFERENCES service_projects(project_id)
+        ON DELETE CASCADE
+);
+
+SELECT * FROM project_volunteers;
+
+SELECT table_name
+FROM information_schema.tables
+WHERE table_name = 'project_volunteers';

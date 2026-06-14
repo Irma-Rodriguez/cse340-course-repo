@@ -2,7 +2,10 @@ import {
     getUpcomingProjects,
     getProjectDetails,
     createProject,
-    updateProject  
+    updateProject,
+    addVolunteer,
+    removeVolunteer,
+    isVolunteer
 } from '../models/projects.js';
 
 import { getCategoriesByProjectId } from '../models/categories.js';
@@ -63,10 +66,20 @@ const showProjectDetailsPage = async (req, res, next) => {
         // New part
         const categories = await getCategoriesByProjectId(id);
 
+        let volunteering = false;
+
+        if (req.session.user) {
+            volunteering = await isVolunteer(
+                req.session.user.user_id,
+                id
+            );
+        }
+
         res.render('project', {
             title: project.title,
             project,
-            categories
+            categories,
+            volunteering
         });
 
     } catch (err) {
@@ -170,6 +183,30 @@ const processEditProjectForm = async (req, res) => {
     }
 };
 
+const volunteerForProject = async (req, res) => {
+
+    const projectId = Number(req.params.id);
+
+    await addVolunteer(
+        req.session.user.user_id,
+        projectId
+    );
+
+    res.redirect(`/project/${projectId}`);
+};
+
+const unVolunteerForProject = async (req, res) => {
+
+    const projectId = Number(req.params.id);
+
+    await removeVolunteer(
+        req.session.user.user_id,
+        projectId
+    );
+
+    res.redirect(`/project/${projectId}`);
+};
+
 export {
     showProjectsPage,
     showProjectDetailsPage,
@@ -177,5 +214,7 @@ export {
     processNewProjectForm,
     projectValidation,
     showEditProjectForm,      
-    processEditProjectForm   
+    processEditProjectForm,
+    volunteerForProject,
+    unVolunteerForProject
 };
